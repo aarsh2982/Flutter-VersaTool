@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class InstagramDownloaderScreen extends StatefulWidget {
   const InstagramDownloaderScreen({super.key});
@@ -14,217 +15,300 @@ class InstagramDownloaderScreen extends StatefulWidget {
 }
 
 class _InstagramDownloaderScreenState extends State<InstagramDownloaderScreen> {
-  TextEditingController _urlController = TextEditingController();
+  final TextEditingController _urlController = TextEditingController();
   bool _isLoading = false;
   String _mediaUrl = '';
   String _mediaType = '';
   File? _downloadedFile;
+  String _error = '';
 
-  // Function to simulate fetching media from an Instagram link
+  @override
+  void dispose() {
+    _urlController.dispose();
+    super.dispose();
+  }
+
+  bool _isValidInstagramUrl(String url) {
+    return url.contains('instagram.com') || url.contains('instagr.am');
+  }
+
   Future<void> _fetchMedia() async {
     setState(() {
       _isLoading = true;
+      _error = '';
+      _mediaUrl = '';
+      _mediaType = '';
+      _downloadedFile = null;
     });
 
     try {
       final url = _urlController.text.trim();
-      if (url.isEmpty) {
-        Fluttertoast.showToast(msg: "Please enter a valid Instagram URL.");
-        setState(() {
-          _isLoading = false;
-        });
-        return;
+      if (!_isValidInstagramUrl(url)) {
+        throw Exception('Please enter a valid Instagram URL');
       }
 
-      // Simulate API call to fetch the media URL (this is just a placeholder)
-      await Future.delayed(const Duration(seconds: 2));
+      // Try to determine the media type from the URL
+      _mediaType = url.contains('.mp4') ? 'video' : 'image';
 
-      // Placeholder media URL and type
-      setState(() {
-        _mediaUrl = url;
-        _mediaType =
-            "image"; // Simulate fetching an image (handle video/audio accordingly)
-        _isLoading = false;
-      });
-
-      Fluttertoast.showToast(msg: "Media fetched successfully!");
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      Fluttertoast.showToast(msg: "Failed to fetch media.");
-    }
-  }
-
-  // Function to download the media
-  Future<void> _downloadMedia() async {
-    try {
-      final response = await http.get(Uri.parse(_mediaUrl));
+      // Attempt to directly fetch the URL to verify it's accessible
+      final response = await http.head(Uri.parse(url));
 
       if (response.statusCode == 200) {
-        // Get the app's document directory to save the media
-        final directory = await getApplicationDocumentsDirectory();
-        final fileName = _mediaUrl.split('/').last;
-        final filePath = '${directory.path}/$fileName';
-        final file = File(filePath);
-
-        // Save the media
-        await file.writeAsBytes(response.bodyBytes);
+        // If the content type header is available, use it to determine media type
+        final contentType = response.headers['content-type'] ?? '';
+        if (contentType.contains('video')) {
+          _mediaType = 'video';
+        } else if (contentType.contains('image')) {
+          _mediaType = 'image';
+        }
 
         setState(() {
-          _downloadedFile = file;
+          _mediaUrl = url;
         });
 
-        Fluttertoast.showToast(msg: "Media downloaded: $filePath");
+        _showToast('Media found successfully!');
       } else {
-        Fluttertoast.showToast(msg: "Failed to download media.");
+        throw Exception('Unable to access the media URL');
       }
     } catch (e) {
-      Fluttertoast.showToast(msg: "Error downloading media.");
+      setState(() {
+        _error = 'Error: ${e.toString()}';
+      });
+      _showToast('Error: ${e.toString()}');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
-  // Share the downloaded media
-  void _shareMedia() {
-    if (_downloadedFile != null) {
-      Share.shareXFiles([XFile(_downloadedFile!.path)]);
-    } else {
-      Fluttertoast.showToast(msg: "No media available to share.");
+  Future<void> _downloadMedia() async {
+    try {
+      setState(() => _isLoading = true);
+
+      final response = await http.get(Uri.parse(_mediaUrl));
+      if (response.statusCode != 200) throw Exception('Download failed');
+
+      final directory = await getApplicationDocumentsDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final extension = _mediaType == 'video' ? '.mp4' : '.jpg';
+      final fileName = 'instagram_$timestamp$extension';
+      final filePath = '${directory.path}/$fileName';
+      final file = File(filePath);
+
+      await file.writeAsBytes(response.bodyBytes);
+      setState(() => _downloadedFile = file);
+      _showToast('Media downloaded successfully!');
+    } catch (e) {
+      _showToast('Error downloading media: ${e.toString()}');
+    } finally {
+      setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _shareMedia() async {
+    if (_downloadedFile != null) {
+      try {
+        await Share.shareXFiles([XFile(_downloadedFile!.path)]);
+      } catch (e) {
+        _showToast('Error sharing media: ${e.toString()}');
+      }
+    } else if (_mediaUrl.isNotEmpty) {
+      // If file isn't downloaded yet, share the URL
+      try {
+        await Share.share(_mediaUrl);
+      } catch (e) {
+        _showToast('Error sharing URL: ${e.toString()}');
+      }
+    } else {
+      _showToast('No media available to share');
+    }
+  }
+
+  void _showToast(String message) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      backgroundColor: Colors.black87,
+      textColor: Colors.white,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        iconTheme: const IconThemeData(color: Colors.black),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: SingleChildScrollView(
-            // Wrap the Column with a SingleChildScrollView
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Icon and Heading
-                Icon(
-                  Icons.download,
-                  size: 100,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  "Download Instagram Media",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 24),
-
-                // Instagram URL input field
-                TextField(
-                  controller: _urlController,
-                  decoration: const InputDecoration(
-                    labelText: "Instagram Link",
-                    hintText: "Paste Instagram media link here",
-                    border: OutlineInputBorder(),
-                    contentPadding:
-                        EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-                  ),
-                  keyboardType: TextInputType.url,
-                ),
-                const SizedBox(height: 16),
-
-                // Fetch button
-                ElevatedButton(
-                  onPressed: _fetchMedia,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 32, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text("Fetch Media"),
-                ),
-                const SizedBox(height: 16),
-
-                // Display loading spinner if media is being fetched
-                if (_isLoading)
-                  const CircularProgressIndicator()
-                else if (_mediaUrl.isNotEmpty)
-                  Column(
-                    children: [
-                      // Media Preview (image/video)
-                      if (_mediaType == "image") ...[
-                        Image.network(
-                          _mediaUrl,
-                          height: 250,
-                          width: 250,
-                          fit: BoxFit.cover,
-                        )
-                      ] else if (_mediaType == "video") ...[
-                        // You can use a package like video_player to display video
-                        const Icon(Icons.video_library,
-                            size: 150, color: Colors.grey),
-                      ] else ...[
-                        const Icon(Icons.error, size: 150, color: Colors.grey),
-                      ],
-
-                      const SizedBox(height: 16),
-
-                      // Buttons for download and share
-                      ElevatedButton(
-                        onPressed: _downloadMedia,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 32, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text("Download Media"),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: _shareMedia,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 32, vertical: 12),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text("Share Downloaded Media"),
-                      ),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 200,
+            floating: true,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: const Text(
+                'Instagram Downloader',
+                style: TextStyle(color: Colors.white),
+              ),
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.purple.shade400,
+                      Colors.pink.shade400,
                     ],
                   ),
-                // Show downloaded media if available
-                if (_downloadedFile != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16.0),
-                    child: Column(
-                      children: [
-                        Text(
-                            "Downloaded Media: ${_downloadedFile!.path.split('/').last}",
-                            style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _shareMedia,
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 32, vertical: 12),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8)),
-                          ),
-                          child: const Text("Share Media"),
-                        ),
-                      ],
-                    ),
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.download_rounded,
+                    size: 80,
+                    color: Colors.white.withOpacity(0.8),
                   ),
-              ],
+                ),
+              ),
             ),
           ),
-        ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: _urlController,
+                            decoration: InputDecoration(
+                              labelText: 'Instagram Link',
+                              hintText: 'Paste Instagram media link here',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              prefixIcon: const Icon(Icons.link),
+                              suffixIcon: IconButton(
+                                icon: const Icon(Icons.clear),
+                                onPressed: () => _urlController.clear(),
+                              ),
+                            ),
+                            keyboardType: TextInputType.url,
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _fetchMedia,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 32, vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              backgroundColor: Theme.of(context).primaryColor,
+                            ),
+                            icon: const Icon(Icons.search),
+                            label: Text(
+                                _isLoading ? 'Fetching...' : 'Fetch Media'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  if (_error.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        _error,
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  if (_mediaUrl.isNotEmpty && _error.isEmpty) ...[
+                    const SizedBox(height: 24),
+                    Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            if (_mediaType == 'image')
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: CachedNetworkImage(
+                                  imageUrl: _mediaUrl,
+                                  placeholder: (context, url) =>
+                                      const CircularProgressIndicator(),
+                                  errorWidget: (context, url, error) =>
+                                      const Icon(Icons.error),
+                                  height: 300,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            else
+                              Container(
+                                height: 200,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey[200],
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Center(
+                                  child: Icon(Icons.video_library,
+                                      size: 64, color: Colors.grey),
+                                ),
+                              ),
+                            const SizedBox(height: 16),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: _isLoading ? null : _downloadMedia,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.download),
+                                  label: const Text('Download'),
+                                ),
+                                ElevatedButton.icon(
+                                  onPressed:
+                                      _mediaUrl.isNotEmpty ? _shareMedia : null,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 24, vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  icon: const Icon(Icons.share),
+                                  label: const Text('Share'),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
