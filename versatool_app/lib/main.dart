@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:versatool_app/currency_convertor.dart';
 import 'package:versatool_app/insta_downloader.dart';
 import 'image_to_pdf.dart';
 
@@ -39,7 +40,7 @@ class _HomePageState extends State<HomePage> {
     const PdfCompressorScreen(),
     const Mp4ToMp3Screen(),
     const InstagramDownloaderScreen(),
-    const CurrencyConverterScreen(),
+    const CurrencyConverterApp(),
   ];
 
   // Titles for AppBar
@@ -140,29 +141,6 @@ class Mp4ToMp3Screen extends StatelessWidget {
           const SizedBox(height: 16),
           const Text(
             "Convert videos to MP3 audio!",
-            style: TextStyle(fontSize: 18),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Screen: Currency Converter
-class CurrencyConverterScreen extends StatelessWidget {
-  const CurrencyConverterScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.attach_money,
-              size: 100, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 16),
-          const Text(
-            "Convert currencies instantly!",
             style: TextStyle(fontSize: 18),
           ),
         ],
