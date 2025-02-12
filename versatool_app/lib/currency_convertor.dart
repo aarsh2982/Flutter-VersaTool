@@ -162,7 +162,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
 
                   // Animated Currency Icon with Gradient
                   Container(
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
                       gradient: LinearGradient(
                         colors: [Colors.tealAccent, Colors.teal],
@@ -176,8 +176,8 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                       builder: (context, value, child) {
                         return Transform.scale(
                           scale: value,
-                          child: Padding(
-                            padding: const EdgeInsets.all(20.0),
+                          child: const Padding(
+                            padding: EdgeInsets.all(20.0),
                             child: Icon(
                               Icons.currency_exchange,
                               size: 80,
@@ -194,7 +194,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                       padding: const EdgeInsets.all(8.0),
                       child: Text(
                         _errorMessage!,
-                        style: TextStyle(color: Colors.orange),
+                        style: const TextStyle(color: Colors.orange),
                       ),
                     ),
 
@@ -202,7 +202,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                   TextField(
                     controller: _amountController,
                     keyboardType:
-                        TextInputType.numberWithOptions(decimal: true),
+                        const TextInputType.numberWithOptions(decimal: true),
                     decoration: InputDecoration(
                       labelText: 'Enter Amount',
                       filled: true,
@@ -210,8 +210,8 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      prefixIcon:
-                          Icon(Icons.monetization_on, color: Colors.tealAccent),
+                      prefixIcon: const Icon(Icons.monetization_on,
+                          color: Colors.tealAccent),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -226,7 +226,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                         }
                       }),
                       IconButton(
-                        icon: Icon(Icons.swap_horiz,
+                        icon: const Icon(Icons.swap_horiz,
                             color: Colors.tealAccent, size: 40),
                         onPressed: () {
                           setState(() {
@@ -250,7 +250,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
 
                   // Animated Conversion Result
                   Container(
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
                       gradient: LinearGradient(
@@ -264,7 +264,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                       child: _convertedAmount == null
                           ? Text(
                               '0.00 $_toCurrency',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 30,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.tealAccent,
@@ -273,7 +273,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                           : Text(
                               '${_convertedAmount!.toStringAsFixed(2)} $_toCurrency',
                               key: ValueKey<double?>(_convertedAmount),
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 30,
                                 fontWeight: FontWeight.bold,
                                 color: Colors.tealAccent,
@@ -294,8 +294,8 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                       ),
                     ),
                     child: _isLoading
-                        ? CircularProgressIndicator(color: Colors.white)
-                        : Text('Convert', style: TextStyle(fontSize: 18)),
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text('Convert', style: TextStyle(fontSize: 18)),
                   ),
 
                   const SizedBox(height: 20),
@@ -309,20 +309,21 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child:
-                        Text('Refresh Rates', style: TextStyle(fontSize: 14)),
+                    child: const Text('Refresh Rates',
+                        style: TextStyle(fontSize: 14)),
                   ),
 
                   const SizedBox(height: 30),
 
                   // Live Rates Cards
                   if (_isLoading)
-                    CircularProgressIndicator()
+                    const CircularProgressIndicator()
                   else
                     GridView.builder(
                       shrinkWrap: true,
-                      physics: NeverScrollableScrollPhysics(),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 2,
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
@@ -332,7 +333,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                       itemBuilder: (context, index) {
                         final currency = _currencies[index];
                         final rate = _exchangeRates[currency];
-                        if (rate == null) return SizedBox.shrink();
+                        if (rate == null) return const SizedBox.shrink();
 
                         return Card(
                           elevation: 4,
@@ -344,17 +345,17 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
                               children: [
                                 Text(
                                   currency,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color: Colors.tealAccent,
                                   ),
                                 ),
-                                SizedBox(height: 8),
+                                const SizedBox(height: 8),
                                 Text(
                                   '1 USD = ${rate.toStringAsFixed(2)} $currency',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
+                                  style: const TextStyle(
                                     fontSize: 14,
                                     color: Colors.white70,
                                   ),
@@ -376,7 +377,7 @@ class _CurrencyConverterScreenState extends State<CurrencyConverterScreen> {
 
   Widget _buildDropdown(String value, Function(String?) onChanged) {
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: Colors.teal.withOpacity(0.2),
         borderRadius: BorderRadius.circular(12),

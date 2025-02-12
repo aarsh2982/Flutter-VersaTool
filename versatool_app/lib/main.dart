@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:versatool_app/currency_convertor.dart';
 import 'package:versatool_app/insta_downloader.dart';
+import 'package:versatool_app/pdf_compressor.dart';
 import 'image_to_pdf.dart';
 
 void main() {
@@ -37,7 +38,7 @@ class _HomePageState extends State<HomePage> {
   // Screens for each functionality
   final List<Widget> _screens = [
     const ImageToPdfScreen(),
-    const PdfCompressorScreen(),
+    const PDFCompressorApp(),
     const Mp4ToMp3Screen(),
     const InstagramDownloaderScreen(),
     const CurrencyConverterApp(),
@@ -94,31 +95,6 @@ class _HomePageState extends State<HomePage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.attach_money),
             label: "Currency",
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Screen: Image to PDF
-
-// Screen: PDF Compressor
-class PdfCompressorScreen extends StatelessWidget {
-  const PdfCompressorScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.compress,
-              size: 100, color: Theme.of(context).colorScheme.primary),
-          const SizedBox(height: 16),
-          const Text(
-            "Compress PDF files easily!",
-            style: TextStyle(fontSize: 18),
           ),
         ],
       ),

@@ -17,7 +17,7 @@ class _ImageToPdfScreenState extends State<ImageToPdfScreen> {
   File? _pdfFile;
 
   Future<void> _selectImages() async {
-    final List<XFile>? images = await _picker.pickMultiImage();
+    final List<XFile> images = await _picker.pickMultiImage();
     if (images != null) {
       setState(() {
         _selectedImages = images;
